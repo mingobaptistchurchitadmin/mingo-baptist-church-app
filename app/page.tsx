@@ -1,112 +1,102 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { supabase } from './supabaseClient';
-import { useRouter } from 'next/navigation';
-import Image from 'next/image';
+import { supabase } from '@/app/supabaseClient';
 
 export default function Home() {
   const [user, setUser] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
-  const router = useRouter();
+  const [isAdmin, setIsAdmin] = useState(false);
 
   useEffect(() => {
-    supabase.auth.getUser().then(({ data: { user } }) => {
-      setUser(user);
-      setLoading(false);
+    // Check current auth session
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      const currentUser = session?.user ?? null;
+      setUser(currentUser);
+      if (currentUser) checkAdmin(currentUser.id);
     });
 
+    // Listen for auth state changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setUser(session?.user ?? null);
+      const currentUser = session?.user ?? null;
+      setUser(currentUser);
+      if (currentUser) checkAdmin(currentUser.id);
+      else setIsAdmin(false);
     });
 
     return () => subscription.unsubscribe();
   }, []);
 
-  const handleSupportToolsClick = () => {
-    router.push('/support-tools');
+  const checkAdmin = async (userId: string) => {
+    const { data } = await supabase
+      .from('profiles')
+      .select('is_admin')
+      .eq('id', userId)
+      .single();
+    
+    if (data?.is_admin) {
+      setIsAdmin(true);
+    }
   };
 
   const handleSignOut = async () => {
     await supabase.auth.signOut();
   };
 
-  if (loading) {
-    return (
-      <div className="flex min-h-screen items-center justify-center bg-zinc-950 text-white">
-        <p className="animate-pulse">Loading Mingo Baptist Hub...</p>
-      </div>
-    );
-  }
-
   return (
-    <main className="flex min-h-screen items-center justify-center bg-zinc-950 p-4">
-      {/* Mobile Frame Container */}
-      <div className="w-full max-w-md bg-slate-50 rounded-3xl shadow-2xl overflow-hidden flex flex-col justify-between min-h-[840px] border-4 border-zinc-800">
+    <main className="flex min-h-screen items-center justify-center bg-slate-900 p-4">
+      <div className="w-full max-w-md bg-white rounded-3xl shadow-2xl overflow-hidden flex flex-col justify-between min-h-[800px] border-4 border-slate-800">
         
-        {/* Header / Branding */}
-        <div className="bg-gradient-to-br from-[#7A2048] via-[#63193A] to-[#4A102B] text-white p-6 rounded-b-3xl shadow-lg flex flex-col items-center text-center relative">
-          <div className="w-16 h-16 rounded-2xl overflow-hidden mb-3 shadow-md border-2 border-white/20 flex items-center justify-center bg-[#7A2048]">
-            <Image 
-              src="/logo.png" 
-              alt="Mingo Baptist Church Logo" 
-              width={64} 
-              height={64} 
-              className="object-cover w-full h-full"
-            />
-          </div>
-
-          <h1 className="text-2xl font-bold tracking-tight">Mingo Baptist Church</h1>
-          <p className="text-rose-200 text-xs mt-1 uppercase tracking-widest font-medium">Central Hub</p>
-          
-          {user && (
-            <div className="mt-4 bg-white/10 px-3 py-1.5 rounded-full text-xs backdrop-blur-sm border border-white/10 text-rose-100">
-              Welcome, <span className="font-semibold text-white">{user.email}</span>
-            </div>
-          )}
+        {/* Header */}
+        <div className="bg-[#7A2048] text-white p-6 text-center rounded-b-3xl shadow-md">
+          <h1 className="text-2xl font-bold tracking-wide">Mingo Baptist Church</h1>
+          <p className="text-pink-100 text-sm mt-1">
+            {user ? `Welcome back, ${user.email}` : 'Welcome to Our Central Hub'}
+          </p>
         </div>
 
         {/* Body Content */}
-        <div className="p-6 flex flex-col gap-5 overflow-y-auto flex-grow">
-          <div className="bg-gradient-to-r from-[#7A2048] to-[#912B58] text-white p-5 rounded-2xl shadow-md">
-            <span className="bg-white/20 text-xs font-semibold px-2.5 py-1 rounded-full uppercase tracking-wider">Welcome</span>
-            <h3 className="text-lg font-bold mt-2">Mingo Baptist Community Hub</h3>
-            <p className="text-rose-100 text-xs mt-1">Access central church updates and administrative tools below.</p>
+        <div className="p-6 flex flex-col gap-4 my-auto">
+          <div className="text-center mb-4">
+            <h2 className="text-xl font-semibold text-slate-800">Stay Connected</h2>
+            <p className="text-slate-500 text-sm mt-1">Join our community, view events, and access resources.</p>
           </div>
 
-          {/* Support Tools Section */}
-          <div>
-            <h2 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">Support Tools</h2>
-            
+          <button className="w-full bg-[#7A2048] hover:bg-[#601938] text-white font-medium py-3 rounded-xl shadow transition">
+            Upcoming Events & Services
+          </button>
+
+          <button className="w-full bg-slate-100 hover:bg-slate-200 text-slate-800 font-medium py-3 rounded-xl shadow-sm transition">
+            Sermons & Media
+          </button>
+
+          <button className="w-full bg-slate-100 hover:bg-slate-200 text-slate-800 font-medium py-3 rounded-xl shadow-sm transition">
+            Give / Tithes
+          </button>
+
+          {/* Admin Restricted Tool */}
+          {user && isAdmin && (
             <button 
-              onClick={handleSupportToolsClick}
-              className="w-full bg-white hover:bg-rose-50/50 p-4 rounded-2xl shadow-sm border border-slate-200 flex items-center justify-between transition group text-left"
+              onClick={() => window.location.href = '/support-tools'}
+              className="w-full bg-amber-600 hover:bg-amber-700 text-white font-medium py-3 rounded-xl shadow transition"
             >
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-rose-50 text-[#7A2048] rounded-xl flex items-center justify-center group-hover:scale-110 transition shrink-0">🛠️</div>
-                <div>
-                  <span className="text-sm font-semibold text-slate-800 block">Digital Posterboard Update Tools</span>
-                  <span className="text-[10px] text-slate-400">Authorized personnel only</span>
-                </div>
-              </div>
-              <span className="text-slate-400 group-hover:translate-x-1 transition">→</span>
+              Digital Posterboard Update Tools
             </button>
-          </div>
+          )}
         </div>
 
-        {/* Footer / Account Management */}
-        <div className="p-5 bg-white border-t border-slate-200 text-center">
+        {/* Footer */}
+        <div className="p-6 bg-slate-50 border-t border-slate-100 text-center">
           {user ? (
             <button 
               onClick={handleSignOut}
-              className="w-full bg-slate-100 hover:bg-red-50 text-slate-700 hover:text-red-600 font-medium py-3 rounded-xl transition text-sm border border-slate-200"
+              className="w-full border border-red-600 text-red-600 hover:bg-red-50 font-medium py-2.5 rounded-xl transition"
             >
-              Sign Out ({user.email})
+              Sign Out
             </button>
           ) : (
             <button 
-              onClick={() => router.push('/auth')}
-              className="w-full bg-[#7A2048] hover:bg-[#63193A] text-white font-medium py-3 rounded-xl shadow transition text-sm"
+              onClick={() => window.location.href = '/auth'}
+              className="w-full border border-[#7A2048] text-[#7A2048] hover:bg-pink-50 font-medium py-2.5 rounded-xl transition"
             >
               Sign In / Register
             </button>

@@ -4,7 +4,6 @@ import { useEffect, useState } from 'react';
 import { supabase } from './supabaseClient';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
-import Link from 'next/link';
 
 export default function Home() {
   const [user, setUser] = useState<any>(null);
@@ -12,13 +11,11 @@ export default function Home() {
   const router = useRouter();
 
   useEffect(() => {
-    // Check current auth session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setUser(session?.user ?? null);
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      setUser(user);
       setLoading(false);
     });
 
-    // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setUser(session?.user ?? null);
     });
@@ -26,9 +23,12 @@ export default function Home() {
     return () => subscription.unsubscribe();
   }, []);
 
+  const handleSupportToolsClick = () => {
+    router.push('/support-tools');
+  };
+
   const handleSignOut = async () => {
     await supabase.auth.signOut();
-    router.refresh();
   };
 
   if (loading) {
@@ -41,13 +41,11 @@ export default function Home() {
 
   return (
     <main className="flex min-h-screen items-center justify-center bg-zinc-950 p-4">
-      {/* Mobile Frame Container (App view on PC, full screen on phones) */}
+      {/* Mobile Frame Container */}
       <div className="w-full max-w-md bg-slate-50 rounded-3xl shadow-2xl overflow-hidden flex flex-col justify-between min-h-[840px] border-4 border-zinc-800">
         
-        {/* Header / Branding with Custom Logo */}
+        {/* Header / Branding */}
         <div className="bg-gradient-to-br from-[#7A2048] via-[#63193A] to-[#4A102B] text-white p-6 rounded-b-3xl shadow-lg flex flex-col items-center text-center relative">
-          
-          {/* Logo Container */}
           <div className="w-16 h-16 rounded-2xl overflow-hidden mb-3 shadow-md border-2 border-white/20 flex items-center justify-center bg-[#7A2048]">
             <Image 
               src="/logo.png" 
@@ -63,60 +61,37 @@ export default function Home() {
           
           {user && (
             <div className="mt-4 bg-white/10 px-3 py-1.5 rounded-full text-xs backdrop-blur-sm border border-white/10 text-rose-100">
-              Welcome back, <span className="font-semibold text-white">{user.email}</span>
+              Welcome, <span className="font-semibold text-white">{user.email}</span>
             </div>
           )}
         </div>
 
         {/* Body Content */}
-        <div className="p-6 flex flex-col gap-4 overflow-y-auto flex-grow">
-          
-          {/* Welcome / Announcement Banner */}
+        <div className="p-6 flex flex-col gap-5 overflow-y-auto flex-grow">
           <div className="bg-gradient-to-r from-[#7A2048] to-[#912B58] text-white p-5 rounded-2xl shadow-md">
-            {user ? (
-              <div>
-                <span className="bg-white/20 text-xs font-semibold px-2.5 py-1 rounded-full uppercase tracking-wider">Member</span>
-                <h3 className="text-lg font-bold mt-2">Connected in Faith</h3>
-                <p className="text-rose-100 text-xs mt-1">We are blessed to have you connected with the Mingo Baptist family today.</p>
-              </div>
-            ) : (
-              <div>
-                <span className="bg-white/20 text-xs font-semibold px-2.5 py-1 rounded-full uppercase tracking-wider">This Sunday</span>
-                <h3 className="text-lg font-bold mt-2">Join Us for Worship</h3>
-                <p className="text-rose-100 text-xs mt-1">Service starts at 10:30 AM. Sign in to access member features and groups.</p>
-              </div>
-            )}
+            <span className="bg-white/20 text-xs font-semibold px-2.5 py-1 rounded-full uppercase tracking-wider">Welcome</span>
+            <h3 className="text-lg font-bold mt-2">Mingo Baptist Community Hub</h3>
+            <p className="text-rose-100 text-xs mt-1">Access central church updates and administrative tools below.</p>
           </div>
 
-          <h2 className="text-xs font-bold text-slate-400 uppercase tracking-wider mt-2">Quick Actions</h2>
-
-          {/* Quick Actions Grid */}
-          <div className="grid grid-cols-2 gap-3">
-            <div className="bg-white hover:bg-rose-50/50 p-4 rounded-2xl shadow-sm border border-slate-200 flex flex-col items-center text-center transition group cursor-pointer">
-              <div className="w-10 h-10 bg-rose-50 text-[#7A2048] rounded-xl flex items-center justify-center mb-2 group-hover:scale-110 transition">📅</div>
-              <span className="text-sm font-semibold text-slate-800">Events</span>
-              <span className="text-[10px] text-slate-400">Upcoming calendar</span>
-            </div>
-
-            <div className="bg-white hover:bg-rose-50/50 p-4 rounded-2xl shadow-sm border border-slate-200 flex flex-col items-center text-center transition group cursor-pointer">
-              <div className="w-10 h-10 bg-rose-50 text-[#7A2048] rounded-xl flex items-center justify-center mb-2 group-hover:scale-110 transition">🎥</div>
-              <span className="text-sm font-semibold text-slate-800">Sermons</span>
-              <span className="text-[10px] text-slate-400">Watch & listen</span>
-            </div>
-
-            <div className="bg-white hover:bg-rose-50/50 p-4 rounded-2xl shadow-sm border border-slate-200 flex flex-col items-center text-center transition group cursor-pointer">
-              <div className="w-10 h-10 bg-rose-50 text-[#7A2048] rounded-xl flex items-center justify-center mb-2 group-hover:scale-110 transition">🙏</div>
-              <span className="text-sm font-semibold text-slate-800">Prayer Wall</span>
-              <span className="text-[10px] text-slate-400">Share & support</span>
-            </div>
-
-            <div className="bg-white hover:bg-rose-50/50 p-4 rounded-2xl shadow-sm border border-slate-200 flex flex-col items-center text-center transition group cursor-pointer">
-              <div className="w-10 h-10 bg-rose-50 text-[#7A2048] rounded-xl flex items-center justify-center mb-2 group-hover:scale-110 transition">💛</div>
-              <span className="text-sm font-semibold text-slate-800">Giving</span>
-              <span className="text-[10px] text-slate-400">Tithes & offerings</span>
-            </div>
+          {/* Support Tools Section */}
+          <div>
+            <h2 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">Support Tools</h2>
+            
+            <button 
+              onClick={handleSupportToolsClick}
+              className="w-full bg-white hover:bg-rose-50/50 p-4 rounded-2xl shadow-sm border border-slate-200 flex items-center justify-between transition group text-left"
+            >
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-rose-50 text-[#7A2048] rounded-xl flex items-center justify-center group-hover:scale-110 transition shrink-0">🛠️</div>
+                <div>
+                  <span className="text-sm font-semibold text-slate-800 block">Digital Posterboard Update Tools</span>
+                  <span className="text-[10px] text-slate-400">Authorized personnel only</span>
+                </div>
+              </div>
+              <span className="text-slate-400 group-hover:translate-x-1 transition">→</span>
+            </button>
           </div>
-
         </div>
 
         {/* Footer / Account Management */}
@@ -126,15 +101,15 @@ export default function Home() {
               onClick={handleSignOut}
               className="w-full bg-slate-100 hover:bg-red-50 text-slate-700 hover:text-red-600 font-medium py-3 rounded-xl transition text-sm border border-slate-200"
             >
-              Sign Out
+              Sign Out ({user.email})
             </button>
           ) : (
-            <Link 
-              href="/auth"
-              className="block w-full bg-[#7A2048] hover:bg-[#63193A] text-white font-medium py-3 rounded-xl shadow transition text-center text-sm"
+            <button 
+              onClick={() => router.push('/auth')}
+              className="w-full bg-[#7A2048] hover:bg-[#63193A] text-white font-medium py-3 rounded-xl shadow transition text-sm"
             >
               Sign In / Register
-            </Link>
+            </button>
           )}
         </div>
 

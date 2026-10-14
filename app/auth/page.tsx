@@ -1,119 +1,115 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { supabase } from '../supabaseClient';
 import { useRouter } from 'next/navigation';
-import Image from 'next/image';
 
-export default function Home() {
-  const [user, setUser] = useState<any>(null);
+export default function AuthPage() {
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [isSignUp, setIsSignUp] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [message, setMessage] = useState('');
   const router = useRouter();
 
-  useEffect(() => {
-    // Check current auth status
-    supabase.auth.getUser().then(({ data: { user } }) => {
-      setUser(user);
-    });
+  const handleAuth = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    setMessage('');
 
-    // Listen for auth state changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setUser(session?.user ?? null);
-    });
-
-    return () => subscription.unsubscribe();
-  }, []);
-
-  const handleSignOut = async () => {
-    await supabase.auth.signOut();
+    if (isSignUp) {
+      const { error } = await supabase.auth.signUp({ email, password });
+      if (error) {
+        setMessage(error.message);
+      } else {
+        setMessage('Registration successful! You can now sign in.');
+        setIsSignUp(false);
+      }
+    } else {
+      const { error } = await supabase.auth.signInWithPassword({ email, password });
+      if (error) {
+        setMessage(error.message);
+      } else {
+        setMessage('Signed in successfully!');
+        // Redirect directly to support tools after login
+        router.push('/support-tools');
+      }
+    }
+    setLoading(false);
   };
 
   return (
     <main className="flex min-h-screen items-center justify-center bg-zinc-950 p-4">
-      {/* Mobile Frame Container */}
-      <div className="w-full max-w-md bg-slate-50 rounded-3xl shadow-2xl overflow-hidden flex flex-col justify-between min-h-[840px] border-4 border-zinc-800">
+      <div className="w-full max-w-md bg-slate-50 rounded-3xl shadow-2xl overflow-hidden flex flex-col justify-between min-h-[840px] border-4 border-zinc-800 p-6">
         
-        {/* Header / Branding using the exact logo theme */}
-        <div className="bg-gradient-to-br from-[#7A2048] via-[#63193A] to-[#4A102B] text-white p-6 rounded-b-3xl shadow-lg flex flex-col items-center text-center relative">
-          
-          {/* Logo Container */}
-          <div className="w-16 h-16 rounded-2xl overflow-hidden mb-3 shadow-md border-2 border-white/20 flex items-center justify-center bg-[#7A2048]">
-            <Image 
-              src="/logo.png" 
-              alt="Mingo Baptist Church Logo" 
-              width={64} 
-              height={64} 
-              className="object-cover w-full h-full"
+        {/* Header */}
+        <div>
+          <button 
+            onClick={() => router.push('/')}
+            className="text-xs text-[#7A2048] hover:underline mb-4 block font-medium"
+          >
+            ← Back to Home
+          </button>
+          <h1 className="text-2xl font-bold text-slate-900 text-center">
+            {isSignUp ? 'Create an Account' : 'Welcome Back'}
+          </h1>
+          <p className="text-slate-500 text-xs text-center mt-1">
+            {isSignUp ? 'Join the Mingo Baptist Church hub' : 'Sign in to access authorized tools'}
+          </p>
+        </div>
+
+        {/* Form */}
+        <form onSubmit={handleAuth} className="flex flex-col gap-4 my-auto">
+          {message && (
+            <div className="p-3 text-xs bg-rose-50 text-[#7A2048] rounded-xl border border-rose-200">
+              {message}
+            </div>
+          )}
+
+          <div>
+            <label className="block text-xs font-semibold text-slate-600 uppercase mb-1">Email Address</label>
+            <input 
+              type="email" 
+              value={email} 
+              onChange={(e) => setEmail(e.target.value)} 
+              required
+              className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:border-[#7A2048] text-slate-800 text-sm"
+              placeholder="you@example.com"
             />
           </div>
 
-          <h1 className="text-2xl font-bold tracking-tight">Mingo Baptist Church</h1>
-          <p className="text-rose-200 text-xs mt-1 uppercase tracking-widest font-medium">Central Hub</p>
-          
-          {user && (
-            <div className="mt-4 bg-white/10 px-3 py-1.5 rounded-full text-xs backdrop-blur-sm border border-white/10 text-rose-100">
-              Welcome back, <span className="font-semibold text-white">{user.email}</span>
-            </div>
-          )}
-        </div>
-
-        {/* Body Content */}
-        <div className="p-6 flex flex-col gap-4 overflow-y-auto flex-grow">
-          
-          {/* Featured Announcement Card with Logo Color Accent */}
-          <div className="bg-gradient-to-r from-[#7A2048] to-[#912B58] text-white p-5 rounded-2xl shadow-md">
-            <span className="bg-white/20 text-xs font-semibold px-2.5 py-1 rounded-full uppercase tracking-wider">This Sunday</span>
-            <h3 className="text-lg font-bold mt-2">Join Us for Worship & Fellowship</h3>
-            <p className="text-rose-100 text-xs mt-1">Service starts at 10:30 AM. Nursery and children's church provided.</p>
+          <div>
+            <label className="block text-xs font-semibold text-slate-600 uppercase mb-1">Password</label>
+            <input 
+              type="password" 
+              value={password} 
+              onChange={(e) => setPassword(e.target.value)} 
+              required
+              className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:border-[#7A2048] text-slate-800 text-sm"
+              placeholder="••••••••"
+            />
           </div>
 
-          <h2 className="text-xs font-bold text-slate-400 uppercase tracking-wider mt-2">Quick Actions</h2>
+          <button 
+            type="submit" 
+            disabled={loading}
+            className="w-full bg-[#7A2048] hover:bg-[#63193A] text-white font-medium py-3 rounded-xl shadow transition mt-2 text-sm"
+          >
+            {loading ? 'Processing...' : isSignUp ? 'Register' : 'Sign In'}
+          </button>
 
-          {/* Grid Actions */}
-          <div className="grid grid-cols-2 gap-3">
-            <button className="bg-white hover:bg-rose-50/50 p-4 rounded-2xl shadow-sm border border-slate-200 flex flex-col items-center text-center transition group">
-              <div className="w-10 h-10 bg-rose-50 text-[#7A2048] rounded-xl flex items-center justify-center mb-2 group-hover:scale-110 transition">📅</div>
-              <span className="text-sm font-semibold text-slate-800">Events</span>
-              <span className="text-[10px] text-slate-400">Upcoming calendar</span>
-            </button>
+          <button 
+            type="button"
+            onClick={() => setIsSignUp(!isSignUp)}
+            className="text-xs text-slate-600 hover:text-[#7A2048] text-center mt-2"
+          >
+            {isSignUp ? 'Already have an account? Sign In' : "Don't have an account? Register"}
+          </button>
+        </form>
 
-            <button className="bg-white hover:bg-rose-50/50 p-4 rounded-2xl shadow-sm border border-slate-200 flex flex-col items-center text-center transition group">
-              <div className="w-10 h-10 bg-rose-50 text-[#7A2048] rounded-xl flex items-center justify-center mb-2 group-hover:scale-110 transition">🎥</div>
-              <span className="text-sm font-semibold text-slate-800">Sermons</span>
-              <span className="text-[10px] text-slate-400">Watch & listen</span>
-            </button>
-
-            <button className="bg-white hover:bg-rose-50/50 p-4 rounded-2xl shadow-sm border border-slate-200 flex flex-col items-center text-center transition group">
-              <div className="w-10 h-10 bg-rose-50 text-[#7A2048] rounded-xl flex items-center justify-center mb-2 group-hover:scale-110 transition">🙏</div>
-              <span className="text-sm font-semibold text-slate-800">Prayer Wall</span>
-              <span className="text-[10px] text-slate-400">Share & support</span>
-            </button>
-
-            <button className="bg-white hover:bg-rose-50/50 p-4 rounded-2xl shadow-sm border border-slate-200 flex flex-col items-center text-center transition group">
-              <div className="w-10 h-10 bg-rose-50 text-[#7A2048] rounded-xl flex items-center justify-center mb-2 group-hover:scale-110 transition">💛</div>
-              <span className="text-sm font-semibold text-slate-800">Giving</span>
-              <span className="text-[10px] text-slate-400">Tithes & offerings</span>
-            </button>
-          </div>
-
-        </div>
-
-        {/* Footer / Account Management */}
-        <div className="p-5 bg-white border-t border-slate-200 text-center">
-          {user ? (
-            <button 
-              onClick={handleSignOut}
-              className="w-full bg-slate-100 hover:bg-red-50 text-slate-700 hover:text-red-600 font-medium py-3 rounded-xl transition text-sm border border-slate-200"
-            >
-              Sign Out
-            </button>
-          ) : (
-            <button 
-              onClick={() => router.push('/auth')}
-              className="w-full bg-[#7A2048] hover:bg-[#63193A] text-white font-medium py-3 rounded-xl shadow transition text-sm"
-            >
-              Sign In / Register
-            </button>
-          )}
+        {/* Footer info */}
+        <div className="text-center text-xs text-slate-400">
+          Mingo Baptist Church Central Hub
         </div>
 
       </div>
